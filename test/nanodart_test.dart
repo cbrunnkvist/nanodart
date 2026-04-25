@@ -220,5 +220,35 @@ void main() {
       expect(NanoSignatures.verifyMessage(message + '!', signature, publicKey),
           false);
     });
+
+    test('test NOMS message signing and verification with empty message', () {
+      String privKey =
+          '67EDBC8F904091738DF33B4B6917261DB91DD9002D3985A7BA090345264A46C6';
+      String publicKey = NanoKeys.createPublicKey(privKey);
+      String message = '';
+
+      // Sign
+      String signature = NanoSignatures.signMessage(message, privKey);
+      expect(signature,
+          '06ABEFD232DEF6238AB88ADA8EF6500BE81C8C516D4C34D61273F2DAE706339611F2E58570575AE6DAA43381FC479615D23690FFBE26F678579D8779735F7D0B');
+
+      // Verify
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+    });
+
+    test('test NOMS verification with OWS-generated signature (dogfooding)', () {
+      String address =
+          "nano_1hfrig58wzrg4pzqen17cyannpy1173oi7jz7zd6srjsqjh7ozcgec9uyo9n";
+      String message = "I am me.";
+      String signature =
+          "3de8620fb30967916d3dc36cd09eba9a633d1678b986fbc31b70ae2834db25a898085bbce32b744aef42ed56b5c001ffebd5516e78c9f22c678dde2d8bdc150a";
+
+      String publicKey = NanoAccounts.extractPublicKey(address);
+      expect(publicKey.toUpperCase(),
+          '3DB883866E7F0E15BF76500557914A5BC0014358163F2FD64CE239BC5E5AFD4E');
+
+      // Verify
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+    });
   });
 }
