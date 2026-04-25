@@ -136,5 +136,119 @@ void main() {
       Uint8List decrypted = NanoCrypt.decrypt(encrypted, password);
       expect(NanoHelpers.byteToHex(decrypted), NanoHelpers.byteToHex(seed));
     });
+
+    test('test NOMS message signing and verification', () {
+      String privKey =
+          '67EDBC8F904091738DF33B4B6917261DB91DD9002D3985A7BA090345264A46C6';
+      String publicKey = NanoKeys.createPublicKey(privKey);
+      String message = 'Hello Nano!';
+
+      String signature = NanoSignatures.signMessage(message, privKey);
+
+      // Verify correct signature
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+
+      // Verify failure with wrong message
+      expect(
+          NanoSignatures.verifyMessage('Hello Nano?', signature, publicKey),
+          false);
+
+      // Verify failure with wrong signature
+      String invalidSignature = signature.replaceFirst('A', 'B');
+      expect(
+          NanoSignatures.verifyMessage(message, invalidSignature, publicKey),
+          false);
+
+      // Verify failure with wrong public key
+      String otherPrivKey =
+          '22EDDBF0D72E9A4232C3FE6689A6CB0A228C9ED822715A63E2F8644AA2C905A4';
+      String otherPublicKey = NanoKeys.createPublicKey(otherPrivKey);
+      expect(NanoSignatures.verifyMessage(message, signature, otherPublicKey),
+          false);
+    });
+
+    test('test NOMS message signing and verification with known vector', () {
+      // Known vector provided by user
+      String privKey =
+          '681FD5ED71A9F81E9D29E3450F6CD8AACB87346FD21A26003389290B9D0CB173';
+      String expectedPublicKey =
+          'D2B3C9D00FFB55E84E7979D67308A515FB07CA79E40A77EB1AAFE62881781783';
+      String expectedAddress =
+          'nano_3noms9a1zytox399kygpge6cc7hu1z79ms1cgzojodz8741qi7w5u3nzb8mn';
+      String message = 'Hej Nano!🥦';
+      String expectedSignature =
+          '535C745819D0F40056F3C46402B4FAE4356B3A8897BDE99C955D411920E740D781E6DDDCBDE228E8B86C4383A1003F9F315519FF73BD356F561D19865DC90F09';
+
+      // Verify key derivation
+      String publicKey = NanoKeys.createPublicKey(privKey);
+      expect(publicKey.toUpperCase(), expectedPublicKey.toUpperCase());
+
+      // Verify address generation
+      String address =
+          NanoAccounts.createAccount(NanoAccountType.NANO, publicKey);
+      expect(address, expectedAddress);
+
+      // Verify signing
+      String signature = NanoSignatures.signMessage(message, privKey);
+      expect(signature.toUpperCase(), expectedSignature.toUpperCase());
+
+      // Verify verification
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+    });
+
+    test('test NOMS message signing and verification with library-generated key',
+        () {
+      // Path 2: Library-generated key
+      String seed = NanoSeeds.generateSeed();
+      String privKey = NanoKeys.seedToPrivate(seed, 0);
+      String publicKey = NanoKeys.createPublicKey(privKey);
+      String address =
+          NanoAccounts.createAccount(NanoAccountType.NANO, publicKey);
+      String message = 'Test message for library-generated key 🚀';
+
+      // Sign
+      String signature = NanoSignatures.signMessage(message, privKey);
+
+      // Verify
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+
+      // Verify address matches the public key
+      expect(NanoAccounts.createAccount(NanoAccountType.NANO, publicKey),
+          address);
+
+      // Negative test: wrong message
+      expect(NanoSignatures.verifyMessage(message + '!', signature, publicKey),
+          false);
+    });
+
+    test('test NOMS message signing and verification with empty message', () {
+      String privKey =
+          '67EDBC8F904091738DF33B4B6917261DB91DD9002D3985A7BA090345264A46C6';
+      String publicKey = NanoKeys.createPublicKey(privKey);
+      String message = '';
+
+      // Sign
+      String signature = NanoSignatures.signMessage(message, privKey);
+      expect(signature,
+          '06ABEFD232DEF6238AB88ADA8EF6500BE81C8C516D4C34D61273F2DAE706339611F2E58570575AE6DAA43381FC479615D23690FFBE26F678579D8779735F7D0B');
+
+      // Verify
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+    });
+
+    test('test NOMS verification with OWS-generated signature (dogfooding)', () {
+      String address =
+          "nano_1hfrig58wzrg4pzqen17cyannpy1173oi7jz7zd6srjsqjh7ozcgec9uyo9n";
+      String message = "I am me.";
+      String signature =
+          "3de8620fb30967916d3dc36cd09eba9a633d1678b986fbc31b70ae2834db25a898085bbce32b744aef42ed56b5c001ffebd5516e78c9f22c678dde2d8bdc150a";
+
+      String publicKey = NanoAccounts.extractPublicKey(address);
+      expect(publicKey.toUpperCase(),
+          '3DB883866E7F0E15BF76500557914A5BC0014358163F2FD64CE239BC5E5AFD4E');
+
+      // Verify
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+    });
   });
 }
