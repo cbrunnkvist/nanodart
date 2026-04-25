@@ -1569,12 +1569,8 @@ class TweetNaclFast {
   // TBD 64bits of n
   ///int cryptoHash(Uint8List out, Uint8List m, long n)
   static int cryptoHashOff(Uint8List out, Uint8List m, final int moff, int n) {
-    Uint8List input = Uint8List(n);
-    for (int i = 0; i < n; ++i) {
-      input[i] = m[i];
-    }
-    Blake2bDigest blake2b = Blake2bDigest(digestSize: n);
-    blake2b.update(input, 0, input.length);
+    Blake2bDigest blake2b = Blake2bDigest(digestSize: out.length);
+    blake2b.update(m, 0, n);
     blake2b.doFinal(out, moff);
 
     return 0;

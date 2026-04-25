@@ -136,5 +136,46 @@ void main() {
       Uint8List decrypted = NanoCrypt.decrypt(encrypted, password);
       expect(NanoHelpers.byteToHex(decrypted), NanoHelpers.byteToHex(seed));
     });
+
+    test('test NOMS message signing and verification', () {
+      String privKey =
+          '67EDBC8F904091738DF33B4B6917261DB91DD9002D3985A7BA090345264A46C6';
+      String publicKey = NanoKeys.createPublicKey(privKey);
+      String message = 'Hello Nano!';
+
+      String signature = NanoSignatures.signMessage(message, privKey);
+
+      // Verify correct signature
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+
+      // Verify failure with wrong message
+      expect(
+          NanoSignatures.verifyMessage('Hello Nano?', signature, publicKey),
+          false);
+
+      // Verify failure with wrong signature
+      String invalidSignature = signature.replaceFirst('A', 'B');
+      expect(
+          NanoSignatures.verifyMessage(message, invalidSignature, publicKey),
+          false);
+
+      // Verify failure with wrong public key
+      String otherPrivKey =
+          '22EDDBF0D72E9A4232C3FE6689A6CB0A228C9ED822715A63E2F8644AA2C905A4';
+      String otherPublicKey = NanoKeys.createPublicKey(otherPrivKey);
+      expect(NanoSignatures.verifyMessage(message, signature, otherPublicKey),
+          false);
+    });
+
+    test('test NOMS known vector from another implementation', () {
+      String message = 'Hej!';
+      String account =
+          'nano_1hfrig58wzrg4pzqen17cyannpy1173oi7jz7zd6srjsqjh7ozcgec9uyo9n';
+      String signature =
+          '51953e3bd9c20fd648445e6aea18a01abfe378cebfd795fc61a37ffe24f1821d6eadb78863d65e978fcd1dd323ad0628bff9b74778c0c4ef2b6efb34479b020f';
+
+      String publicKey = NanoAccounts.extractPublicKey(account);
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+    });
   });
 }
