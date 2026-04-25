@@ -167,15 +167,58 @@ void main() {
           false);
     });
 
-    test('test NOMS known vector from another implementation', () {
-      String message = 'Hej!';
-      String account =
-          'nano_1hfrig58wzrg4pzqen17cyannpy1173oi7jz7zd6srjsqjh7ozcgec9uyo9n';
-      String signature =
-          '51953e3bd9c20fd648445e6aea18a01abfe378cebfd795fc61a37ffe24f1821d6eadb78863d65e978fcd1dd323ad0628bff9b74778c0c4ef2b6efb34479b020f';
+    test('test NOMS message signing and verification with known vector', () {
+      // Known vector provided by user
+      String privKey =
+          '681FD5ED71A9F81E9D29E3450F6CD8AACB87346FD21A26003389290B9D0CB173';
+      String expectedPublicKey =
+          'D2B3C9D00FFB55E84E7979D67308A515FB07CA79E40A77EB1AAFE62881781783';
+      String expectedAddress =
+          'nano_3noms9a1zytox399kygpge6cc7hu1z79ms1cgzojodz8741qi7w5u3nzb8mn';
+      String message = 'Hej Nano!🥦';
+      String expectedSignature =
+          '535C745819D0F40056F3C46402B4FAE4356B3A8897BDE99C955D411920E740D781E6DDDCBDE228E8B86C4383A1003F9F315519FF73BD356F561D19865DC90F09';
 
-      String publicKey = NanoAccounts.extractPublicKey(account);
+      // Verify key derivation
+      String publicKey = NanoKeys.createPublicKey(privKey);
+      expect(publicKey.toUpperCase(), expectedPublicKey.toUpperCase());
+
+      // Verify address generation
+      String address =
+          NanoAccounts.createAccount(NanoAccountType.NANO, publicKey);
+      expect(address, expectedAddress);
+
+      // Verify signing
+      String signature = NanoSignatures.signMessage(message, privKey);
+      expect(signature.toUpperCase(), expectedSignature.toUpperCase());
+
+      // Verify verification
       expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+    });
+
+    test('test NOMS message signing and verification with library-generated key',
+        () {
+      // Path 2: Library-generated key
+      String seed = NanoSeeds.generateSeed();
+      String privKey = NanoKeys.seedToPrivate(seed, 0);
+      String publicKey = NanoKeys.createPublicKey(privKey);
+      String address =
+          NanoAccounts.createAccount(NanoAccountType.NANO, publicKey);
+      String message = 'Test message for library-generated key 🚀';
+
+      // Sign
+      String signature = NanoSignatures.signMessage(message, privKey);
+
+      // Verify
+      expect(NanoSignatures.verifyMessage(message, signature, publicKey), true);
+
+      // Verify address matches the public key
+      expect(NanoAccounts.createAccount(NanoAccountType.NANO, publicKey),
+          address);
+
+      // Negative test: wrong message
+      expect(NanoSignatures.verifyMessage(message + '!', signature, publicKey),
+          false);
     });
   });
 }

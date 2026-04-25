@@ -10,6 +10,17 @@ class NanoSignatures {
         .toUpperCase();
   }
 
+  static String getMessageDigest(String message) {
+    Uint8List header =
+        NanoHelpers.stringToBytesUtf8('\x18Nano Off-chain Message:\n');
+    Uint8List messageBytes = NanoHelpers.stringToBytesUtf8(message);
+    Uint8List lengthBytes = NanoHelpers.intToBytes(messageBytes.length, 4);
+
+    Uint8List payloadHash =
+        Blake2b.digest256([header, lengthBytes, messageBytes]);
+    return NanoHelpers.byteToHex(payloadHash).toUpperCase();
+  }
+
   /// Sign a message according to NOMS (Nano Off-chain Message Signing) standard (ORIS-001)
   static String signMessage(String message, String privKey) {
     Uint8List header =
